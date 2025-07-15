@@ -1,15 +1,16 @@
-FROM node:18-slim
+# base image
+FROM node:20-alpine
 
-# Set working directory
+# set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# copy package.json and package-lock.json
+COPY package*.json ./
 
-# Install dependencies
+# install dependencies inside container
 RUN npm install
 
-# Copy source code
+# copy source code
 COPY . .
 
 # Start the application in development mode
