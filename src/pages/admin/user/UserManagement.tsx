@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, Shield } from "lucide-react";
-import { usersApi } from "../../../api/users";
+import { Edit, Trash2, Shield, UserPlus } from "lucide-react";
+import { usersApi, type UpdateUserDto } from "../../../api/users";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import {
@@ -24,9 +24,25 @@ export const UserManagement: React.FC = () => {
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newRole, setNewRole] = useState("");
+
+  // Form states
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "USER" as "USER" | "ADMIN" | "CEO",
+  });
+
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    role: "USER" as "USER" | "ADMIN" | "CEO",
+  });
 
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuthStore();
@@ -42,13 +58,41 @@ export const UserManagement: React.FC = () => {
       }),
   });
 
+  const createMutation = useMutation({
+    mutationFn: usersApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setIsCreateModalOpen(false);
+      setCreateForm({ name: "", email: "", password: "", role: "USER" });
+    },
+    onError: (error: any) => {
+      console.error("Create user error:", error);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserDto }) =>
+      usersApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setIsEditModalOpen(false);
+      setSelectedUser(null);
+    },
+    onError: (error: any) => {
+      console.error("Update user error:", error);
+    },
+  });
+
   const updateRoleMutation = useMutation({
     mutationFn: ({ id, role }: { id: string; role: string }) =>
       usersApi.updateRole(id, { role: role as any }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      setIsModalOpen(false);
+      setIsRoleModalOpen(false);
       setSelectedUser(null);
+    },
+    onError: (error: any) => {
+      console.error("Update role error:", error);
     },
   });
 
@@ -57,12 +101,57 @@ export const UserManagement: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
+    onError: (error: any) => {
+      console.error("Delete user error:", error);
+    },
   });
+
+  const handleCreateUser = () => {
+    setCreateForm({ name: "", email: "", password: "", role: "USER" });
+    setIsCreateModalOpen(true);
+  };
+
+  const handleEditUser = (user: any) => {
+    setSelectedUser(user);
+    setEditForm({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    });
+    setIsEditModalOpen(true);
+  };
 
   const handleRoleChange = (user: any) => {
     setSelectedUser(user);
     setNewRole(user.role);
-    setIsModalOpen(true);
+    setIsRoleModalOpen(true);
+  };
+
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      !createForm.name.trim() ||
+      !createForm.email.trim() ||
+      !createForm.password.trim()
+    ) {
+      return;
+    }
+    createMutation.mutate(createForm);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser || !editForm.name.trim() || !editForm.email.trim()) {
+      return;
+    }
+    updateMutation.mutate({
+      id: selectedUser._id,
+      data: {
+        name: editForm.name,
+        email: editForm.email,
+        role: editForm.role,
+      },
+    });
   };
 
   const handleUpdateRole = () => {
@@ -103,6 +192,31 @@ export const UserManagement: React.FC = () => {
     return false;
   };
 
+  const canCreateUser = () => {
+    return ["ADMIN", "CEO"].includes(currentUser?.role || "");
+  };
+
+  const canUpdateRole = () => {
+    return currentUser?.role === "CEO";
+  };
+
+  const canDeleteUser = () => {
+    return currentUser?.role === "CEO";
+  };
+
+  const getAvailableRoles = () => {
+    const roles = [
+      { value: "USER", label: "สมาชิก" },
+      { value: "ADMIN", label: "ผู้ดูแลระบบ" },
+    ];
+
+    if (currentUser?.role === "CEO") {
+      roles.push({ value: "CEO", label: "ผู้บริหาร" });
+    }
+
+    return roles;
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -121,6 +235,12 @@ export const UserManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-900">จัดการผู้ใช้</h1>
           <p className="text-gray-600 mt-2">จัดการผู้ใช้และบทบาทในระบบ</p>
         </div>
+        {canCreateUser() && (
+          <Button onClick={handleCreateUser}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            เพิ่มผู้ใช้ใหม่
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -158,8 +278,8 @@ export const UserManagement: React.FC = () => {
               <TableRow key={user._id}>
                 <TableCell>
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-blue-600">
+                    <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-primary-600">
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -172,25 +292,32 @@ export const UserManagement: React.FC = () => {
                 <TableCell>
                   <div className="flex items-center space-x-2">
                     {canManageUser(user) && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRoleChange(user)}
-                        >
-                          <Shield className="h-4 w-4" />
-                        </Button>
-                        {user._id !== currentUser?._id && (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            onClick={() => handleDelete(user._id, user.name)}
-                            loading={deleteMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditUser(user)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canUpdateRole() && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRoleChange(user)}
+                      >
+                        <Shield className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDeleteUser() && user._id !== currentUser?._id && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(user._id, user.name)}
+                        loading={deleteMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     )}
                   </div>
                 </TableCell>
@@ -210,10 +337,134 @@ export const UserManagement: React.FC = () => {
         )}
       </Card>
 
+      {/* Create User Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="เพิ่มผู้ใช้ใหม่"
+      >
+        <form onSubmit={handleCreateSubmit} className="space-y-4">
+          <Input
+            label="ชื่อ-นามสกุล"
+            value={createForm.name}
+            onChange={(e) =>
+              setCreateForm((prev) => ({ ...prev, name: e.target.value }))
+            }
+            required
+          />
+
+          <Input
+            label="อีเมล"
+            type="email"
+            value={createForm.email}
+            onChange={(e) =>
+              setCreateForm((prev) => ({ ...prev, email: e.target.value }))
+            }
+            required
+          />
+
+          <Input
+            label="รหัสผ่าน"
+            type="password"
+            value={createForm.password}
+            onChange={(e) =>
+              setCreateForm((prev) => ({ ...prev, password: e.target.value }))
+            }
+            required
+          />
+
+          <Select
+            label="บทบาท"
+            value={createForm.role}
+            onChange={(value) =>
+              setCreateForm((prev) => ({ ...prev, role: value as any }))
+            }
+            options={getAvailableRoles()}
+          />
+
+          {createMutation.error && (
+            <div className="text-red-600 text-sm">
+              เกิดข้อผิดพลาดในการสร้างผู้ใช้
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              ยกเลิก
+            </Button>
+            <Button type="submit" loading={createMutation.isPending}>
+              สร้างผู้ใช้
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="แก้ไขข้อมูลผู้ใช้"
+      >
+        {selectedUser && (
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <Input
+              label="ชื่อ-นามสกุล"
+              value={editForm.name}
+              onChange={(e) =>
+                setEditForm((prev) => ({ ...prev, name: e.target.value }))
+              }
+              required
+            />
+
+            <Input
+              label="อีเมล"
+              type="email"
+              value={editForm.email}
+              onChange={(e) =>
+                setEditForm((prev) => ({ ...prev, email: e.target.value }))
+              }
+              required
+            />
+
+            <Select
+              label="บทบาท"
+              value={editForm.role}
+              onChange={(value) =>
+                setEditForm((prev) => ({ ...prev, role: value as any }))
+              }
+              options={getAvailableRoles()}
+            />
+
+            {updateMutation.error && (
+              <div className="text-red-600 text-sm">
+                เกิดข้อผิดพลาดในการแก้ไขข้อมูล
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                ยกเลิก
+              </Button>
+              <Button type="submit" loading={updateMutation.isPending}>
+                บันทึกการเปลี่ยนแปลง
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
       {/* Role Change Modal */}
       <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isRoleModalOpen}
+        onClose={() => setIsRoleModalOpen(false)}
         title="เปลี่ยนบทบาทผู้ใช้"
       >
         {selectedUser && (
@@ -228,17 +479,20 @@ export const UserManagement: React.FC = () => {
               label="บทบาทใหม่"
               value={newRole}
               onChange={setNewRole}
-              options={[
-                { value: "USER", label: "สมาชิก" },
-                { value: "ADMIN", label: "ผู้ดูแลระบบ" },
-                ...(currentUser?.role === "CEO"
-                  ? [{ value: "CEO", label: "ผู้บริหาร" }]
-                  : []),
-              ]}
+              options={getAvailableRoles()}
             />
 
+            {updateRoleMutation.error && (
+              <div className="text-red-600 text-sm">
+                เกิดข้อผิดพลาดในการเปลี่ยนบทบาท
+              </div>
+            )}
+
             <div className="flex justify-end space-x-3">
-              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsRoleModalOpen(false)}
+              >
                 ยกเลิก
               </Button>
               <Button

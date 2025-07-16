@@ -50,8 +50,9 @@ export const usersApi = {
     return response.data;
   },
 
-  delete: async (id: string): Promise<void> => {
-    await api.delete(`/users/${id}`);
+  delete: async (id: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/users/${id}`);
+    return response.data;
   },
 
   getStats: async () => {
