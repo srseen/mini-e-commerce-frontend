@@ -274,7 +274,7 @@ export const UserManagement: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data?.data?.map((user) => (
+            {data?.users?.map((user) => (
               <TableRow key={user._id}>
                 <TableCell>
                   <div className="flex items-center space-x-3">
