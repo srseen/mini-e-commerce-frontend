@@ -17,15 +17,15 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses =
-    "inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
+    "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variants = {
-    blue: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 disabled:bg-gray-300",
+    blue: "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500 shadow-sm hover:shadow-md",
     secondary:
-      "bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500",
-    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
+      "bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500 border border-gray-200 hover:border-gray-300",
+    danger: "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 focus:ring-red-500 shadow-sm hover:shadow-md",
     outline:
-      "border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-blue-500",
+      "border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:ring-blue-500 bg-white",
   };
 
   const sizes = {
@@ -40,7 +40,7 @@ export const Button: React.FC<ButtonProps> = ({
         baseClasses,
         variants[variant],
         sizes[size],
-        loading && "opacity-50 cursor-not-allowed",
+        loading && "opacity-75 cursor-not-allowed",
         className
       )}
       disabled={disabled || loading}

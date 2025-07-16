@@ -9,7 +9,7 @@ export const Card: React.FC<CardProps> = ({ children, className, ...props }) => 
   return (
     <div
       className={cn(
-        'bg-white rounded-lg shadow-md border border-gray-200 p-6',
+        'bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200',
         className
       )}
       {...props}

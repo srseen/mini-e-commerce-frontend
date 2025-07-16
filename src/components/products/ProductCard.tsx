@@ -20,18 +20,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   return (
-    <Card className="group hover:shadow-lg transition-shadow duration-200 p-0 overflow-hidden">
+    <Card className="group hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-0 overflow-hidden border-2 hover:border-blue-200">
       <Link to={`/products/${product.slug}`}>
-        <div className="aspect-square bg-gray-100 overflow-hidden">
+        <div className="aspect-square bg-gray-100 overflow-hidden relative">
           {product.images[0] ? (
             <img
               src={product.images[0]}
               alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
               <span className="text-4xl">📦</span>
+            </div>
+          )}
+          {product.salePrice && (
+            <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+              ลดราคา
+            </div>
+          )}
+          {product.stock === 0 && (
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <span className="text-white font-bold text-lg">สินค้าหมด</span>
             </div>
           )}
         </div>
@@ -39,12 +49,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
       <div className="p-4">
         <Link to={`/products/${product.slug}`}>
-          <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+          <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 min-h-[3rem]">
             {product.name}
           </h3>
         </Link>
 
-        <div className="flex items-center mb-2">
+        <div className="flex items-center mb-3">
           <div className="flex items-center">
             {[...Array(5)].map((_, i) => (
               <Star
@@ -84,7 +94,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             size="sm"
             onClick={handleAddToCart}
             disabled={product.stock === 0}
-            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg"
           >
             <ShoppingCart className="h-4 w-4" />
           </Button>

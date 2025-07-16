@@ -44,7 +44,7 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             onClick={() => onFilterChange("category", "")}
             className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
               !filters.category
-                ? "bg-blue-100 text-blue-700"
+                ? "bg-blue-100 text-blue-700 font-medium"
                 : "hover:bg-gray-100"
             }`}
           >
@@ -54,13 +54,14 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({
             <button
               key={category._id}
               onClick={() => onFilterChange("category", category._id)}
-              className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+              className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center ${
                 filters.category === category._id
-                  ? "bg-blue-100 text-blue-700"
+                  ? "bg-blue-100 text-blue-700 font-medium"
                   : "hover:bg-gray-100"
               }`}
             >
-              {category.icon} {category.name}
+              <span className="mr-2">{category.icon}</span>
+              {category.name}
             </button>
           ))}
         </div>
